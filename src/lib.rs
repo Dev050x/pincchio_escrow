@@ -1,6 +1,9 @@
 pub mod instructions;
 pub use instructions::*;
 
+pub mod errors;
+pub use errors::*;
+
 pub mod state;
 use pinocchio::{account_info::AccountInfo, entrypoint, pubkey::Pubkey, ProgramResult};
 pub use state::*;
