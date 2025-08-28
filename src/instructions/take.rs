@@ -1,8 +1,8 @@
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
+use pinocchio::{account_info::AccountInfo, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::create_program_address, ProgramResult};
+use pinocchio_token::state::TokenAccount;
 
 use crate::{
-    take, AccountCheck, AssociatedTokenAccount, AssociatedTokenAccountCheck,
-    AssociatedTokenAccountInit, MintInterface, ProgramAccount, SignerAccount,
+    take, AccountCheck, AssociatedTokenAccount, AssociatedTokenAccountCheck, AssociatedTokenAccountInit, Escrow, MintInterface, ProgramAccount, SignerAccount, TokenAccount
 };
 
 pub struct TakeAccounts<'a> {
@@ -89,6 +89,24 @@ impl<'a> Take<'a> {
     pub const DISCRIMINATOR:&'a u8 = &1;
 
     pub fn process(&mut self) -> ProgramResult{
-        
+        let data = self.accounts.escrow.try_borrow_data()?;
+        let escrow = Escrow::load(&data)?;
+
+        let escrow_key = create_program_address(&[b"escrow", self.accounts.maker.key() , &escrow.seed.to_le_bytes() , &escrow.bump], &crate::ID)?;
+        if &escrow_key != self.accounts.escrow.key(){
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let seed_binding = escrow.seed.to_le_bytes();
+        let bump_binding = escrow.bump;
+        let escrow_seeds = [
+            Seed::from(b"escrow"),
+            Seed::from(self.accounts.maker.key().as_ref()),
+            Seed::from(&seed_binding),
+            Seed::from(&bump_binding),
+        ];
+        let signer = Signer::from(escrow_seedss);
+        let amoutn = TokenAccount::get
+
     }
 }
