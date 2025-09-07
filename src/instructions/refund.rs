@@ -22,8 +22,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for RefundAccounts<'a> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
-        let [maker, escrow, mint_a, vault, maker_ata_a, system_program, token_program] = accounts
-        else {
+        let [maker, escrow, mint_a, vault, maker_ata_a, system_program, token_program,..] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 

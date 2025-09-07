@@ -5,7 +5,7 @@ pub mod errors;
 pub use errors::*;
 
 pub mod state;
-use pinocchio::{account_info::AccountInfo, entrypoint, pubkey::Pubkey, ProgramResult};
+use pinocchio::{account_info::AccountInfo, entrypoint, pubkey::Pubkey, ProgramResult, program_error::ProgramError};
 pub use state::*;
 
 entrypoint!(process_instructions);
@@ -20,8 +20,11 @@ fn process_instructions(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
-) -> ProgramResult {
-    match instruction_data.split_first() {}
-
-    Ok(())
+) ->  ProgramResult {
+    match instruction_data.split_first() {
+        Some((Make::DISCRIMINATOR , data)) => Make::try_from((data,accounts))?.process(),
+        Some((Take::DISCRIMINATOR, _)) => Take::try_from(accounts)?.process(),
+        Some((Refund::DISCRIMINATOR, _ )) => Refund::try_from(accounts)?.process(),
+        _ => Err(ProgramError::InvalidInstructionData)
+    }
 }
