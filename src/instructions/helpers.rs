@@ -327,7 +327,9 @@ pub struct MintInterface;
 
 impl AccountCheck for MintInterface {
     fn check(account: &AccountInfo) -> Result<(), ProgramError> {
+        
         if unsafe { account.owner().ne(&TOKEN_2022_PROGRAM_ID) } {
+            // means should be owned by legacy token program
             if unsafe { account.owner().ne(&pinocchio_token::ID) } {
                 return Err(ProgramError::InvalidAccountOwner.into());
             } else {
@@ -336,6 +338,7 @@ impl AccountCheck for MintInterface {
                 }
             }
         } else {
+            //means should be owned by token 2022 program
             let data = account.try_borrow_data()?;
 
             if data.len().ne(&pinocchio_token::state::Mint::LEN) {

@@ -1,8 +1,8 @@
 use pinocchio::{account_info::AccountInfo, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::create_program_address, ProgramResult};
-use pinocchio_token::state::TokenAccount;
+use pinocchio_token::{instructions::{CloseAccount, Transfer}, state::TokenAccount};
 
 use crate::{
-    take, AccountCheck, AssociatedTokenAccount, AssociatedTokenAccountCheck, AssociatedTokenAccountInit, Escrow, MintInterface, ProgramAccount, SignerAccount, TokenAccount
+    AccountCheck, AccountClose, AssociatedTokenAccount, AssociatedTokenAccountCheck, AssociatedTokenAccountInit, Escrow, MintInterface, ProgramAccount, SignerAccount, TokenAccount
 };
 
 pub struct TakeAccounts<'a> {
@@ -105,8 +105,40 @@ impl<'a> Take<'a> {
             Seed::from(&seed_binding),
             Seed::from(&bump_binding),
         ];
-        let signer = Signer::from(escrow_seedss);
+
+        let amount = {
+            let vault = TokenAccount::from_account_info(self.accounts.vault)?;
+            vault.amount()
+        };
+        let signer_seeds = Signer::from(&escrow_seeds);
+
+        //transfer token(a) from vault to taker ata a
+        Transfer{
+            from: self.accounts.vault,
+            to: self.accounts.taker_ata_a,
+            amount: amount,
+            authority: self.accounts.escrow,
+        }.invoke_signed(&[signer_seeds.clone()])?;
+
+        //close account
+        CloseAccount{
+            account:self.accounts.vault,
+            destination:self.accounts.maker,
+            authority:self.accounts.escrow
+        }.invoke_signed(&[signer_seeds.clone()])?;
+
+        //transfer token(b) from taker to maker
+        Transfer{
+            from:self.accounts.taker_ata_b,
+            to:self.accounts.maker_ata_b,
+            amount:escrow.receive,
+            authority:self.accounts.taker
+        }.invoke()?;
+
+        drop(data);
+        ProgramAccount::close(self.accounts.escrow, self.accounts.taker)?;
         
+        Ok(())
 
     }
 }
